@@ -62,4 +62,6 @@ dependencies {
     implementation(libs.androidx.appcompat.v161)
     implementation(libs.material)
     implementation(libs.play.services.location.v1800)
+    implementation (libs.play.services.maps.v1810 )// Google Maps SDK
+    implementation (libs.play.services.location) // Konum servisi
 }
