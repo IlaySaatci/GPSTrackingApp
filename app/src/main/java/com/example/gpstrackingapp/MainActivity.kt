@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
+
     @SuppressLint("MissingPermission")
     private fun updateLocation(location: Location) {
         val newLatLng = LatLng(location.latitude, location.longitude)
@@ -100,7 +101,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         if (isFirstLocation) {
             googleMap.addMarker(
                 MarkerOptions().position(newLatLng)
-                    .title("Başlangıç Konumu")
+                    .title(getString(R.string.start_location))
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
             )
 
@@ -116,12 +117,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val cameraUpdate = CameraUpdateFactory.newLatLngZoom(newLatLng, 17f) // Başlangıç zoom seviyesini ayarlıyoruz
                     googleMap.animateCamera(cameraUpdate)
 
-                    // Konum ve sokak ismini göster
-                    Toast.makeText(this, "Bulunduğunuz Sokak: $streetName", Toast.LENGTH_LONG).show()
+                    // Konum ve sokak ismini gösterir
+                    Toast.makeText(this, getString(R.string.street_name, streetName), Toast.LENGTH_LONG).show()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                Toast.makeText(this, "Adres bilgisi alınamadı", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.unable_to_get_address), Toast.LENGTH_SHORT).show()
             }
 
             isFirstLocation = false
@@ -143,7 +144,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         lastLocation = location
     }
-
 
     private fun saveMarkers() {
         val jsonArray = JSONArray()
@@ -179,21 +179,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun toggleTracking() {
         if (isTracking) {
             stopLocationUpdates() // Takip durduruluyor
-            startStopButton.text = "Başlat" // Butonun metni değişiyor
+            startStopButton.text = getString(R.string.start_tracking)
         } else {
             startLocationUpdates() // Takip başlatılıyor
-            startStopButton.text = "Durdur" // Butonun metni değişiyor
+            startStopButton.text = getString(R.string.stop_tracking)
         }
         isTracking = !isTracking // Takip durumu değişiyor
     }
 
     // Marker'ları sıfırlamak için kullanılan fonksiyon
     private fun resetMarkers() {
-        googleMap.clear() // Tüm marker'ları haritadan sil
-        markersList.clear() // Listeden marker'ları temizle
+        googleMap.clear() // Tüm marker'ları haritadan siler
+        markersList.clear() // Listeden marker'ları temizler
         val sharedPreferences = getSharedPreferences("MarkersData", Context.MODE_PRIVATE)
         sharedPreferences.edit().remove("markers").apply()
-        Toast.makeText(this, "Tüm noktalar sıfırlandı", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.reset_markers), Toast.LENGTH_SHORT).show()
     }
 
     // Marker'a tıklanınca adres bilgisini gösteren fonksiyon
@@ -203,12 +203,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             val addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
             if (addressList != null && addressList.isNotEmpty()) {
                 val address = addressList[0]
-                val addressInfo = "Adres: ${address.getAddressLine(0)}"
+                val addressInfo = getString(R.string.address_info, address.getAddressLine(0))
                 Toast.makeText(this, addressInfo, Toast.LENGTH_LONG).show()
             }
         } catch (e: IOException) {
             e.printStackTrace()
-            Toast.makeText(this, "Adres bilgisi alınamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.unable_to_get_address), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -221,7 +221,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         // Marker tıklama olayı
         googleMap.setOnMarkerClickListener { marker ->
             val latLng = marker.position
-            showAddressInfo(latLng) // Tıklanan marker'ın adresini göster
+            showAddressInfo(latLng) // Tıklanan marker'ın adresini gösterir
             true
         }
     }
@@ -231,7 +231,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         if (requestCode == 1 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             startLocationUpdates()
         } else {
-            Toast.makeText(this, "Konum izni gerekli!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.location_permission_needed), Toast.LENGTH_SHORT).show()
         }
     }
 
