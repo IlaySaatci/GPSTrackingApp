@@ -4,8 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -14,6 +17,8 @@ import com.google.android.gms.location.*
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import org.json.JSONArray
+import java.io.IOException
+import java.util.*
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -25,6 +30,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var distanceThreshold = 100f // 100 metre sınırı
     private val markersList = mutableListOf<LatLng>()
     private var isFirstLocation = true
+    private var isTracking = false // Takip durumu
+    private lateinit var startStopButton: Button // Buton değişkeni
+    private lateinit var resetButton: Button // Sıfırla butonu değişkeni
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +43,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         mapView.getMapAsync(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        // Buton referansları
+        startStopButton = findViewById(R.id.startStopButton)
+        resetButton = findViewById(R.id.clearButton)
+
+        // Butona tıklama işlevi
+        startStopButton.setOnClickListener {
+            toggleTracking() // Takip başlat/durdur
+        }
+
+        // "Sıfırla" butonuna tıklama işlevi
+        resetButton.setOnClickListener {
+            resetMarkers() // Marker'ları sıfırla
+        }
 
         checkLocationPermission()
     }
@@ -58,12 +80,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 for (location in result.locations) {
-                    updateLocation(location)
+                    if (isTracking) { // Takip aktifse marker eklenir
+                        updateLocation(location)
+                    }
                 }
             }
         }
 
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
     private fun updateLocation(location: Location) {
@@ -85,6 +113,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 saveMarkers()
             }
         }
+
+        // Konum her güncellendiğinde, haritaya zoom yapalım
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newLatLng, 15f))
+
         lastLocation = location
     }
 
@@ -119,11 +151,54 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun toggleTracking() {
+        if (isTracking) {
+            stopLocationUpdates() // Takip durduruluyor
+            startStopButton.text = "Başlat" // Butonun metni değişiyor
+        } else {
+            startLocationUpdates() // Takip başlatılıyor
+            startStopButton.text = "Durdur" // Butonun metni değişiyor
+        }
+        isTracking = !isTracking // Takip durumu değişiyor
+    }
+
+    // Marker'ları sıfırlamak için kullanılan fonksiyon
+    private fun resetMarkers() {
+        googleMap.clear() // Tüm marker'ları haritadan sil
+        markersList.clear() // Listeden marker'ları temizle
+        val sharedPreferences = getSharedPreferences("MarkersData", Context.MODE_PRIVATE)
+        sharedPreferences.edit().remove("markers").apply()
+        Toast.makeText(this, "Tüm noktalar sıfırlandı", Toast.LENGTH_SHORT).show()
+    }
+
+    // Marker'a tıklanınca adres bilgisini gösteren fonksiyon
+    private fun showAddressInfo(latLng: LatLng) {
+        val geocoder = Geocoder(this, Locale.getDefault())
+        try {
+            val addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+            if (addressList != null && addressList.isNotEmpty()) {
+                val address = addressList[0]
+                val addressInfo = "Adres: ${address.getAddressLine(0)}"
+                Toast.makeText(this, addressInfo, Toast.LENGTH_LONG).show()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(this, "Adres bilgisi alınamadı", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
         googleMap.uiSettings.isZoomControlsEnabled = true
         googleMap.isMyLocationEnabled = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         loadMarkers()
+
+        // Marker tıklama olayı
+        googleMap.setOnMarkerClickListener { marker ->
+            val latLng = marker.position
+            showAddressInfo(latLng) // Tıklanan marker'ın adresini göster
+            true
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
