@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
-
+    @SuppressLint("MissingPermission")
     private fun updateLocation(location: Location) {
         val newLatLng = LatLng(location.latitude, location.longitude)
 
@@ -103,7 +103,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title("Başlangıç Konumu")
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
             )
-            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newLatLng, 15f))
+
+            // Geocoder ile adresi alma
+            val geocoder = Geocoder(this, Locale.getDefault())
+            try {
+                val addressList = geocoder.getFromLocation(newLatLng.latitude, newLatLng.longitude, 1)
+                if (addressList != null && addressList.isNotEmpty()) {
+                    val address = addressList[0]
+                    val streetName = address.thoroughfare // Sokağın ismini alıyoruz
+
+                    // Adrese göre zoom seviyesini ayarlayalım
+                    val cameraUpdate = CameraUpdateFactory.newLatLngZoom(newLatLng, 17f) // Başlangıç zoom seviyesini ayarlıyoruz
+                    googleMap.animateCamera(cameraUpdate)
+
+                    // Konum ve sokak ismini göster
+                    Toast.makeText(this, "Bulunduğunuz Sokak: $streetName", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                Toast.makeText(this, "Adres bilgisi alınamadı", Toast.LENGTH_SHORT).show()
+            }
+
             isFirstLocation = false
         } else {
             val distance = lastLocation?.distanceTo(location) ?: 0f
@@ -114,11 +134,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-        // Konum her güncellendiğinde, haritaya zoom yapalım
-        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newLatLng, 15f))
+        // Zoom seviyesini sabit tutma
+        if (isFirstLocation) {
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(newLatLng, 18f))
+        } else {
+            googleMap.moveCamera(CameraUpdateFactory.newLatLng(newLatLng))
+        }
 
         lastLocation = location
     }
+
 
     private fun saveMarkers() {
         val jsonArray = JSONArray()
