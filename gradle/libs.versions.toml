@@ -16,6 +16,7 @@ playServicesLocation = "21.3.0"
 playServicesLocationVersion = "18.0.0'"
 playServicesMaps = "19.1.0"
 playServicesMapsVersion = "18.1.0"
+lifecycleService = "2.8.7"
 
 [libraries]
 androidx-appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
@@ -40,6 +41,7 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 play-services-location-v1800 = { module = "com.google.android.gms:play-services-location", version.ref = "googlePlayServicesLocation" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 play-services-maps-v1810 = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMapsVersion" }
+androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleService" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
